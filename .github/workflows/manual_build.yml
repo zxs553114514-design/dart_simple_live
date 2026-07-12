@@ -1,0 +1,45 @@
+name: Manual Build Windows EXE
+
+on:
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java (For Flutter)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          cd simple_live_app
+          flutter pub get
+
+      - name: Set MSVC flags (Fix C++ Error)
+        run: echo "CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNING" >> $GITHUB_ENV
+
+      - name: Build Windows EXE
+        run: |
+          cd simple_live_app
+          flutter build windows --release
+
+      - name: Upload Artifacts (Export ZIP)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleLive-Windows-Build
+          path: simple_live_app/build/windows/x64/runner/Release/
